@@ -79,16 +79,28 @@ lr_en_model = LogisticRegression(penalty='elasticnet', solver='saga', warm_start
 
 # fit models
 lr_models = fit_models(lr_en_model, lr_grid, X_train_full, y_train_full, pds, searcher='grid')
+# note that models are refit on the full training set with the "optimal" hyperparameters
 
 # get hyperparameters
+lr_params = get_sklearn_model_params(lr_models)
 
-
-# evaluate
+# evaluate models
 lr_model_perf, lr_strat_perf = evaluate_models(lr_models, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
 
-# insert model type into results for concatenation later
-lr_model_perf.insert(0, 'model', 'LogReg')
-lr_strat_perf.insert(0, 'model', 'LogReg')
+# inserts a column specifying the model type, e.g. LogReg. 
+# this is done so that all model performance can be combined for comparison and sorting.
+lr_model_perf.insert(1, 'model', 'LogReg')
+lr_strat_perf.insert)1, 'model', 'LogReg')
+
+lr_perf = pd.merge(lr_model_perf, lr_strat_perf, on=['target', 'model'])
+
+# save models
+save_models(lr_models, 'lr_')
+
+# write results to excel
+write_to_excel(pd.DataFrame(lr_params), sheet_name='LogReg Params')
+write_to_excel(lr_perf, sheet_name='LogReg Performance')
+
 
 
 ## Random Forest
@@ -105,5 +117,103 @@ rf = RandomForestClassifier(random_state=1)
 # fit
 rf_models = fit_models(rf, rf_param_dist, X_train_full, y_train_full, pds, searcher='grid', verbose=True)
 
+# get hyperparams
+rf_params = get_sklearn_model_params(rf_models)
+
 # evaluate
 rf_model_perf, rf_strat_perf = evaluate_models(rf_models, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
+
+rf_model_perf.insert(1, 'model', 'RF')
+rf_strat_perf.insert)1, 'model', 'RF')
+
+rf_perf = pd.merge(rf_model_perf, rf_strat_perf, on=['target', 'model'])
+
+# write results to excel
+write_to_excel(pd.DataFrame(rf_params), sheet_name='RF Params')
+write_to_excel(rf_perf, sheet_name='RF Performance')
+
+
+
+## Gradient Boosted Trees
+
+gbt_param_dist = {
+    'learning_rate' : uniform(0.0, 0.1),
+    'n_estimators' : [20000],
+    'subsample' : uniform(0.1, 0.5),
+    'max_depth' : [1, 2],
+    'validation_fraction' : uniform(0.1, 0.5)
+}
+gbt_param_grid = {
+    'learning_rate' : [0.1, 0.01, 0.001, 0.0001, 0.00001],
+    'n_estimators' : [100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000],
+    'subsample' : [0.1, 0.2, 0.3, 0.4, 0.5],
+    'max_depth' : [1, 2, 3, 4, 5]
+}
+
+# init
+gbt = GradientBoostingClassifier(random_state=1)
+
+# fit
+gbt_models = fit_models(gbt, gbt_param_grid, X_train_full, y_train_full, pds, searcher='grid', verbose=True)
+
+# get hparams
+gbt_params = get_sklearn_model_params(gbt_models)
+
+# evaluate
+gbt_model_perf, gbt_strat_perf = evaluate_models(gbt_models, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
+
+gbt_model_perf.insert(1, 'model', 'GBT')
+gbt_strat_perf.insert)1, 'model', 'GBT')
+
+gbt_perf = pd.merge(gbt_model_perf, gbt_strat_perf, on=['target', 'model'])
+
+# save models
+save_models(gbt_models, 'gbt_')
+
+# write results to excel
+write_to_excel(pd.DataFrame(gbt_params), sheet_name='GBT Params')
+write_to_excel(gbt_perf, sheet_name='GBT Performance')
+
+
+
+## Extremely Randomized Trees
+
+extra_tree_param_grid = {
+    'n_estimators' : [1000, 2000, 5000, 10000, 20000],
+    'max_depth' : [1, 2, 3, 4, 5]
+}
+
+# initialize and fit
+extra_tree = ExtraTreesClassifier(random_state=1)
+
+extra_trees = fit_models(extra_tree, extra_tree_param_grid, X_train_full, y_train_full, pds, searcher='grid', verbose=True)
+
+# get hparams
+xt_params = get_sklearn_model_params(extra_trees)
+
+# evaluate 
+xt_model_perf, xt_strat_perf = evaluate_models(extra_trees, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
+
+xt_model_perf.insert(1, 'model', 'XT')
+xt_strat_perf.insert)1, 'model', 'XT')
+
+xt_perf = pd.merge(xt_model_perf, xt_strat_perf, on=['target', 'model'])
+
+# save and write
+
+save_models(xt_models, 'xt_')
+
+write_to_excel(pd.DataFrame(xt_params), sheet_name='XT Params')
+write_to_excel(xt_perf, sheet_name='XT Performance')
+
+
+
+
+
+
+
+
+
+
+
+

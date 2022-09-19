@@ -839,15 +839,20 @@ def fit_nets(X_train, y_train, X_val, y_val, callbacks, architecture=[64], lr=0.
     
     Parameters
     ----------
-    X_train:
-    y_train:
-    X_val:
-    y_val:
-    callbacks:
-    architecture: 
-    lr: 
-    epochs:
+    X_train: the training feature set. 
+    y_train: the training target set. 
+    X_val:the validation feature set.
+    y_val: the validation target set.
+    callbacks: an iterable containing callbacks.
+    architecture: an iterable containing the number of units in each hidden layer .
+    lr: the learning rate for Nadam optimization.
+    epochs: the number of training epochs. Doesn't really matter as long as it's large enough since 
+        early stopping is used.
 
+    Returns
+    ----------
+    models: a dict of KerasClassifiers indexable by target variable name.
+    histories: a dict of training histories indexable by target variable name.
     """
 
     models = {}
@@ -870,6 +875,21 @@ def fit_nets(X_train, y_train, X_val, y_val, callbacks, architecture=[64], lr=0.
 
 def plot_histories(histories):
     
+    """
+
+    Plots the training history of a neural network. Must have metrics=['accuracy'].
+
+    Parameters
+    ----------
+    histories: a dict of training histories indexable by target variable name.
+
+    Returns
+    ----------
+    None
+
+
+    """
+
     for key in histories:
         history = histories[key].history
         val_loss = history['val_loss']
@@ -883,3 +903,55 @@ def plot_histories(histories):
         plt.xlabel('Iteration')
         plt.show()
 
+    return None
+
+def write_to_excel(df, sheet_name, path='Results.xlsx'):
+
+    """
+
+    Writes a DataFrame to an excel file.
+
+    Parameters
+    ----------
+    df: a DataFrame
+    sheet_name: the name of the sheet to write to
+    path: the path to the excel workbook (default='Results.xlsx').
+
+    Returns
+    ----------
+    None
+
+    """
+
+    with pd.ExcelWriter(path) as w:
+        df.to_excel(w, sheet_name=sheet_name)
+
+    return None
+
+def get_sklearn_model_params(models):
+
+    """
+
+    Extracts model parameters for each model in a dict of models, indexable by target variable name.
+
+    Parameters
+    ----------
+    models: a dict of sklearn models indexable by target variable name.
+
+    Returns
+    ----------
+    a DataFrame of model parameters 
+
+    """
+
+    params_df = pd.DataFrame()
+
+    for key in models:
+        model = models[key]
+        params = model.best_params_
+        params_tmp_df = pd.DataFrame([params])
+        params_df = pd.concat([params_df, params_tmp_df])
+        
+    params_df.insert(0, 'target', ['mktrf', 'smb', 'hml', 'rmw', 'cma', 'umd'])
+
+    return params_df
