@@ -90,7 +90,7 @@ lr_model_perf, lr_strat_perf = evaluate_models(lr_models, X_train, y_train, X_te
 # inserts a column specifying the model type, e.g. LogReg. 
 # this is done so that all model performance can be combined for comparison and sorting.
 lr_model_perf.insert(1, 'model', 'LogReg')
-lr_strat_perf.insert)1, 'model', 'LogReg')
+lr_strat_perf.insert(1, 'model', 'LogReg')
 
 lr_perf = pd.merge(lr_model_perf, lr_strat_perf, on=['target', 'model'])
 
@@ -124,7 +124,7 @@ rf_params = get_sklearn_model_params(rf_models)
 rf_model_perf, rf_strat_perf = evaluate_models(rf_models, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
 
 rf_model_perf.insert(1, 'model', 'RF')
-rf_strat_perf.insert)1, 'model', 'RF')
+rf_strat_perf.insert(1, 'model', 'RF')
 
 rf_perf = pd.merge(rf_model_perf, rf_strat_perf, on=['target', 'model'])
 
@@ -163,7 +163,7 @@ gbt_params = get_sklearn_model_params(gbt_models)
 gbt_model_perf, gbt_strat_perf = evaluate_models(gbt_models, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
 
 gbt_model_perf.insert(1, 'model', 'GBT')
-gbt_strat_perf.insert)1, 'model', 'GBT')
+gbt_strat_perf.insert(1, 'model', 'GBT')
 
 gbt_perf = pd.merge(gbt_model_perf, gbt_strat_perf, on=['target', 'model'])
 
@@ -195,7 +195,7 @@ xt_params = get_sklearn_model_params(extra_trees)
 xt_model_perf, xt_strat_perf = evaluate_models(extra_trees, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
 
 xt_model_perf.insert(1, 'model', 'XT')
-xt_strat_perf.insert)1, 'model', 'XT')
+xt_strat_perf.insert(1, 'model', 'XT')
 
 xt_perf = pd.merge(xt_model_perf, xt_strat_perf, on=['target', 'model'])
 
@@ -208,12 +208,28 @@ write_to_excel(xt_perf, sheet_name='XT Performance')
 
 
 
+## Neural Networks
 
+# callbacks
+early_stopping_cb = keras.callbacks.EarlyStopping(monitor='val_accuracy', min_delta=0.001, patience=30, restore_best_weights=True)
+reduce_lr_cb = keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy', factor=0.1, patience=15)
 
+# Constant nets (i.e., 1 layer, 32 nodes)
 
+layers_to_try = [1, 2, 3, 4, 5]
+nodes_to_try = [4, 8, 16, 32, 64, 128, 256]
 
+fit_all_kinds_of_nets(layers=layers_to_try, nodes=nodes_to_try, node_config='constant')
 
+# Pyrimidical nets with 256 nodes in the first layer
+fit_all_kinds_of_nets(layers=layers_to_try, nodes=nodes_to_try, node_config='halving', first_layer_nodes=256) 
 
+# Pyrimidical nets with 128 nodes in the first layer
+fit_all_kinds_of_nets(layers=layers_to_try, nodes=nodes_to_try, node_config='halving', first_layer_nodes=128) 
 
+# Pyrimidical nets with 64 nodes in the first layer
+fit_all_kinds_of_nets(layers=layers_to_try, nodes=nodes_to_try, node_config='halving', first_layer_nodes=64) 
 
+# Pyrimidical nets with 32 nodes in the first layer
+fit_all_kinds_of_nets(layers=layers_to_try, nodes=nodes_to_try, node_config='halving', first_layer_nodes=256) 
 

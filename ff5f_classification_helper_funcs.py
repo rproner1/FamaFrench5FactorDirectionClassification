@@ -948,10 +948,85 @@ def get_sklearn_model_params(models):
 
     for key in models:
         model = models[key]
-        params = model.best_params_
+        try:
+            params = model.best_params_ # for other kinds of models
+        except:
+            params = model.get_params() # for nets
+        
         params_tmp_df = pd.DataFrame([params])
         params_df = pd.concat([params_df, params_tmp_df])
         
     params_df.insert(0, 'target', ['mktrf', 'smb', 'hml', 'rmw', 'cma', 'umd'])
 
     return params_df
+
+def fit_all_kinds_of_nets(layers, nodes, node_config='constant', first_layer_nodes=256):
+
+    """
+
+    Fits neural nets for every combination of the number of neurons (per layer) and the number of hidden layers.
+    Nets are evaluated and results are saved.
+
+    Parameters
+    ----------
+    layers: an iterable with elements indicating the number of hidden layers to create.
+    nodes: an iterable with the number of nodes (per layer) to use.
+    node_config: the method of congifuring nodes {'constant', 'halving'} (default='constant'). If node_config='constant', each layer has the same number of nodes.
+        if node_config='halving', each subsequent layer is half of its predecessor. The number of nodes in the first layer can be specified. 
+        By default, halving starts with 256 nodes in the first layer.
+    first_layer_nodes: the number of nodes in the first hidden layer of the network. Only used if node_config is set to 'halving'. 
+
+    Returns
+    ----------
+    None
+
+    """
+
+    for n_nodes in nodes:
+        for n_layers in layers:
+            
+            # Constant configuration
+            if node_config='constant':
+                # defines neural network architecture
+                arch = [n_nodes for layer in range(n_layers)]
+                
+                # fit nets 
+                nn_models, nn_model_hists = fit_nets(X_train, y_train, X_val, y_val, callbacks=[early_stopping_cb, reduce_lr_cb], architecture=arch, epochs=300)
+            
+            elif node_config='halving':
+                
+                x = first_layer_nodes
+                arch = [x]
+
+                # if the number of layers is goe to 2, halve the nodes of each layer after the first
+                if n_layers >= 2:
+                    for layer in range(2, n_layers+1):
+                        x = x / 2
+                        arch.append(x)
+
+                nn_models, nn_model_hists = fit_nets(X_train, y_train, X_val, y_val, callbacks=[early_stopping_cb, reduce_lr_cb], architecture=arch, epochs=300)
+
+
+            # get params
+            params = get_sklearn_model_params(nn_models)
+
+            # evaluate 
+            model_perf, strat_perf = evaluate_models(nn_models, X_train, y_train, X_test, y_test, strategy_train, strategy_test)
+
+            model_name = 'NN ' + str(n_layers) + 'x' + str(n_nodes)
+
+            model_perf.insert(1, 'model', model_name)
+            strat_perf.insert(1, 'model', model_name)
+
+            perf = pd.merge(model_perf, strat_perf, on=['target', 'model'])
+
+            # save and write
+
+            save_models(nn_models, model_name + '_')
+
+            write_to_excel(pd.DataFrame(params), sheet_name= model_name +  ' Params')
+            write_to_excel(perf, sheet_name= model_name + ' Performance')
+
+    return None
+
+    
